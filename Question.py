@@ -113,12 +113,11 @@ class MultyChoiceQuestion(Question):
         Returns:
             dict: A dictionary with answers as keys and their counts as values.
         """
-        d = defaultdict(int)
 
         for answer in self.answers:
-            d[answer.answer] += 1
+            self.grouped[answer.answer] += 1
 
-        return d
+        return self.grouped
 
 
 class StringQuestion(Question):
@@ -162,7 +161,44 @@ class StringQuestion(Question):
             else:
                 grouped[s] = [s]
 
-        return {key: len(value) for key, value in grouped.items()}
+        self.grouped = {key: len(value) for key, value in grouped.items()}
+        return self.grouped
+
+    def manual_group_fix(self, group_name: str, answers: list[str]):
+        """
+        Manually fix the grouping by adjusting the count for a specific group.
+
+        This method increments the count of a specified group by the number of answers
+        in the provided list. Additionally, any answers that belong to the specified group
+        are removed from the grouped dictionary.
+
+        Args:
+            group_name (str): The name of the group to be adjusted.
+            answers (list): A list of answers that belong to the specified group.
+
+        Example:
+            manual_group_fix("Group A", ["Answer 1", "Answer 2"])
+        """
+        self.grouped[group_name] += len(answers)
+
+        for key in self.grouped.keys():
+            if key in answers:
+                self.grouped.pop(key)
+
+    def manual_group(self, groups: dict[str, int]):
+        """
+        Manually set the groups for the answers.
+
+        This method directly replaces the `grouped` dictionary with a new one
+        provided in the `groups` argument.
+
+        Args:
+            groups (dict): A dictionary where keys are group names and values are their counts.
+
+        Example:
+            manual_group({"Group A": 5, "Group B": 3})
+        """
+        self.grouped = groups
 
 
 class Questions:
