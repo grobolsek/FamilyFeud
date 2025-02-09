@@ -1,6 +1,4 @@
 from tinydb import TinyDB, Query
-import os
-
 
 
 class database:
@@ -36,6 +34,3 @@ class database:
 
     def group_answers(self, question):
         Question = Query()
-
-
-
