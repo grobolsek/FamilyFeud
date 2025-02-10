@@ -94,10 +94,18 @@ class Question(ABC):
         return [a.answer for a in self.answers]
 
     def sort_grouped_answers(self):
+        """
+        Sort the grouped answers
+        """
+        if not self.grouped:
+            self.group()
         self.grouped = sorted(self.grouped.items(), key=lambda x: x[1], reverse=True)
 
     def to_dict(self) -> dict:
-        # Convert class instance to a dictionary
+        """
+        Convert class instance to a dictionary
+        :return: returns dict of values of the question.
+        """
         return {
             "question_id": self.question_id,
             "question_text": self.question_text,
@@ -288,7 +296,9 @@ class Questions:
         return copied_list
 
     def get_by_id(self, id_: int) -> Question:
-        return self.questions[id_]
+        for question in self.questions:
+            if question.question_id == id_:
+                return question
 
     def get_by_text(self, text: str) -> Question:
         for question in self.questions:
