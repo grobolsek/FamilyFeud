@@ -14,31 +14,34 @@ class Answer:
         answer (str): The answer text.
     """
 
-    def __init__(self, answer: str):
+    def __init__(self, answer: str, answer_id: int = None):
         """
         Initialize the Answer with the provided answer text.
 
         Args:
             answer (str): The answer text.
+            answer_id (int): The id of the answer.
         """
-        self.answer = answer
+        self.answer: str = answer
+        self.answer_id: int = answer_id
 
     def __str__(self):
         return self.answer
 
-    def get_answer(self):
-        return self.answer
+    def get_answer_id(self):
+        return self.answer_id
 
     def to_dict(self) -> dict:
         # Convert class instance to a dictionary
         return {
             "answer": str(self.answer),
+            "answer_id": self.answer_id
         }
 
     @classmethod
     def from_dict(cls, data):
         # Convert a dictionary back to the class instance
-        return cls(data["answer"])
+        return cls(data["answer"], data["answer_id"])
 
 
 class Question(ABC):
@@ -68,6 +71,7 @@ class Question(ABC):
         self.answers = answers
         self.grouped = grouped if grouped else defaultdict(int)
         self.question_id = question_id
+        self.counter = 0
 
     @abstractmethod
     def group(self):
@@ -89,7 +93,8 @@ class Question(ABC):
         Args:
             answer (str): The answer text to be added.
         """
-        self.answers.append(Answer(answer=answer))
+        self.answers.append(Answer(answer=answer, answer_id=self.counter))
+        self.counter += 1
 
     def get_answers(self) -> list[str]:
         """
@@ -127,6 +132,7 @@ class MultiChoiceQuestion(Question):
         """
         super().__init__(question_text,"multi", answers, grouped, question_id)
         self.possible_answers = possible_answers if possible_answers else []
+        self.counter = 0
 
     def group(self):
         """
@@ -139,7 +145,8 @@ class MultiChoiceQuestion(Question):
             self.grouped[str(answer)] += 1
 
     def add_possible_answer(self, answer: str):
-        self.possible_answers.append(Answer(answer))
+        self.possible_answers.append(Answer(answer, self.counter))
+        self.counter += 1
 
     def edit_possible_answer(self, old_answer:str, new_answer: str):
         for answer in self.possible_answers:
@@ -149,6 +156,7 @@ class MultiChoiceQuestion(Question):
 
     def remove_possible_answer(self, answer: str):
         self.possible_answers.remove(answer)
+
 
     def to_dict(self) -> dict:
         """
@@ -160,7 +168,7 @@ class MultiChoiceQuestion(Question):
             "type": self.question_type,
             "answers": self.get_answers(),
             "grouped": self.grouped,
-            "possible_answers": [str(a) for a in self.possible_answers],
+            "possible_answers": [{a.answer_id: a.answer} for a in self.possible_answers],
             "id": self.question_id,
         }
 
@@ -301,7 +309,7 @@ class Questions:
         randomise() -> list: Return a shuffled list of the questions.
     """
 
-    def __init__(self, questions_list: map = None):
+    def __init__(self, questions_list: dict = None):
         """
         Initialize the Questions collection with an empty list and a counter set to 0.
         """
@@ -314,6 +322,7 @@ class Questions:
         Args:
             question (str): The text of the question to be added.
             type_ (str): The type of the question, either "string" or "multi choice".
+            question_id:
         Raises:
             Exception: If the question type is unknown.
         """
@@ -331,19 +340,19 @@ class Questions:
         del self.questions[question_id]
 
     def get_questions_text(self) -> list[str]:
-        return [question.question_text for question in self.questions]
+        return [question.question_text for question in self.questions.values()]
 
     def group_all_questions(self):
-        for question in self.questions:
+        for question in self.questions.values():
             question.group()
 
     def group_and_sort_all_questions(self):
-        for question in self.questions:
+        for question in self.questions.values():
             question.group()
             question.sort_grouped_answers()
 
     def sort_all_questions(self):
-        for question in self.questions:
+        for question in self.questions.values():
             question.sort_grouped_answers()
 
     def randomise(self) -> list:
@@ -357,10 +366,13 @@ class Questions:
         shuffle(copied_list)
         return copied_list
 
-    def get_by_text(self, question_text: str) -> Question:
+    def get_question_by_text(self, question_text: str) -> Question:
         for question in self.questions:
             if question.question_text == question_text:
                 return question
+
+    def get_question_by_id(self, question_id: int) -> Question:
+        return self.questions[question_id]
 
     def get_id_by_text(self, question_text: str) -> int:
         return next((k for k, v in self.questions.items() if v.question_text == question_text), None)
@@ -368,7 +380,7 @@ class Questions:
     def to_dict(self):
         # Convert class instance to a dictionary
         return {
-            "questions": self.questions,
+            "questions": [question.to_dict() for question in self.questions.values()],
         }
 
     @classmethod

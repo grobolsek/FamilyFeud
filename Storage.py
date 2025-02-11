@@ -45,8 +45,11 @@ class Storage:
         # Remove from class
         self.questions.remove_question(question_id)
 
+    def get_question(self, question_id: int):
+        return self.questions.get_question_by_id(question_id)
+
     def get_questions(self):
-        return self.questions
+        return self.questions.questions
 
     def get_questions_dict(self):
         if len(self.db) > 0:
