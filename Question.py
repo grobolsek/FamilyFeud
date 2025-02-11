@@ -23,10 +23,16 @@ class Answer:
         """
         self.answer = answer
 
+    def __str__(self):
+        return self.answer
+
+    def get_answer(self):
+        return self.answer
+
     def to_dict(self) -> dict:
         # Convert class instance to a dictionary
         return {
-            "answer": self.answer,
+            "answer": str(self.answer),
         }
 
     @classmethod
@@ -41,7 +47,6 @@ class Question(ABC):
 
     Attributes:
         question_text (str): The text of the question.
-        question_id (int): The unique identifier for the question.
         answers (list): A list to store answers to the question.
         grouped (defaultdict): A dictionary to store grouped answers with their count.
 
@@ -51,19 +56,18 @@ class Question(ABC):
         answers() -> list: Return a list of answers for the question.
     """
 
-    def __init__(self, question_text: str, question_id: int, type_: str, answers: list):
+    def __init__(self, question_text: str, question_type: str, answers: list, grouped = None, question_id: int = None):
         """
         Initialize the Question with the provided question text and ID.
 
         Args:
             question_text (str): The text of the question.
-            question_id (int): The unique identifier for the question.
         """
         self.question_text = question_text
-        self.question_id = question_id
-        self.type_ = type_
+        self.question_type = question_type
         self.answers = answers
-        self.grouped = defaultdict(int)
+        self.grouped = grouped if grouped else defaultdict(int)
+        self.question_id = question_id
 
     @abstractmethod
     def group(self):
@@ -74,6 +78,9 @@ class Question(ABC):
         according to the needs of the question type.
         """
         pass
+
+    def edit_question(self, new_question: str):
+        self.question_text = new_question
 
     def add_answer(self, answer: str):
         """
@@ -91,27 +98,13 @@ class Question(ABC):
         Returns:
             list: A list of answer texts.
         """
-        return [a.answer for a in self.answers]
+        return [str(a) for a in self.answers]
 
     def sort_grouped_answers(self):
         """
         Sort the grouped answers
         """
-        if not self.grouped:
-            self.group()
         self.grouped = sorted(self.grouped.items(), key=lambda x: x[1], reverse=True)
-
-    def to_dict(self) -> dict:
-        """
-        Convert class instance to a dictionary
-        :return: returns dict of values of the question.
-        """
-        return {
-            "question_id": self.question_id,
-            "question_text": self.question_text,
-            "type": self.type_,
-            "answers": self.get_answers(),
-        }
 
 
 class MultiChoiceQuestion(Question):
@@ -125,15 +118,15 @@ class MultiChoiceQuestion(Question):
         group() -> dict: Group answers based on their frequency and return the result.
     """
 
-    def __init__(self, question_text: str, question_id: int, answers: list):
+    def __init__(self, question_text: str, answers: list, grouped = None, possible_answers: list = None, question_id: int = None):
         """
         Initialize the Multiple Choice Question with the provided question text and ID.
 
         Args:
             question_text (str): The text of the question.
-            question_id (int): The unique identifier for the question.
         """
-        super().__init__(question_text, question_id, "multi", answers)
+        super().__init__(question_text,"multi", answers, grouped, question_id)
+        self.possible_answers = possible_answers if possible_answers else []
 
     def group(self):
         """
@@ -142,17 +135,44 @@ class MultiChoiceQuestion(Question):
         Returns:
             dict: A dictionary with answers as keys and their counts as values.
         """
-
         for answer in self.answers:
-            self.grouped[answer.answer] += 1
+            self.grouped[str(answer)] += 1
+
+    def add_possible_answer(self, answer: str):
+        self.possible_answers.append(Answer(answer))
+
+    def edit_possible_answer(self, old_answer:str, new_answer: str):
+        for answer in self.possible_answers:
+            if str(answer) == old_answer:
+                answer.answer = new_answer
+                return
+
+    def remove_possible_answer(self, answer: str):
+        self.possible_answers.remove(answer)
+
+    def to_dict(self) -> dict:
+        """
+        Convert class instance to a dictionary
+        :return: returns dict of values of the question.
+        """
+        return {
+            "question_text": self.question_text,
+            "type": self.question_type,
+            "answers": self.get_answers(),
+            "grouped": self.grouped,
+            "possible_answers": [str(a) for a in self.possible_answers],
+            "id": self.question_id,
+        }
 
     @classmethod
     def from_dict(cls, data):
         # Convert a dictionary back to the class instance
         return cls(
             data["question_text"],
-            data["question_id"],
             [Answer(answer) for answer in data["answers"]],
+            data["grouped"],
+            data["possible_answers"],
+            data["id"],
         )
 
 
@@ -167,37 +187,47 @@ class StringQuestion(Question):
         group(threshold=80) -> dict: Group similar answers using fuzzy matching.
     """
 
-    def __init__(self, question_text: str, question_id: int, answers: list):
+    def __init__(self, question_text: str, answers: list, grouped = None, question_id: int = None):
         """
         Initialize the String Question with the provided question text and ID.
 
         Args:
             question_text (str): The text of the question.
-            question_id (int): The unique identifier for the question.
         """
-        super().__init__(question_text, question_id, "string", answers)
+        super().__init__(question_text, "string", answers, grouped, question_id)
 
-    def group(self, threshold: int = 80):
-        """
-        Group similar answers using fuzzy matching and a given threshold score.
+    def group(self, threshold=85, case_sensitive=False):
+        clusters = {}  # Maps original keys to their counts
+        processed_keys = {}  # Maps original keys to their processed versions (e.g., lowercase)
 
-        Args:
-            threshold (int): The minimum similarity score to consider answers as matching.
+        data = self.get_answers()
 
-        Returns:
-            dict: A dictionary with grouped answers and their counts.
-        """
-        grouped = {}
+        for s in data:
+            processed_s = s if case_sensitive else s.lower()
 
-        for s in self.answers:
-            match = process.extractOne(s, grouped.keys(), scorer=fuzz.ratio, score_cutoff=threshold)
-
-            if match:
-                grouped[match[0]].append(s)
+            if not clusters:
+                clusters[s] = 1
+                processed_keys[s] = processed_s
             else:
-                grouped[s] = [s]
+                processed_choices = list(processed_keys.values())
+                original_choices = list(processed_keys.keys())
 
-        self.grouped = {key: len(value) for key, value in grouped.items()}
+                best_match = process.extractOne(
+                    processed_s,
+                    processed_choices,
+                    scorer=fuzz.WRatio,
+                    score_cutoff=threshold
+                )
+
+                if best_match:
+                    matched_index = best_match[2]
+                    matched_original_key = original_choices[matched_index]
+                    clusters[matched_original_key] += 1
+                else:
+                    clusters[s] = 1
+                    processed_keys[s] = processed_s
+
+        self.grouped = defaultdict(int, clusters)
 
     def manual_group_fix(self, group_name: str, answers: list[str]):
         """
@@ -235,13 +265,27 @@ class StringQuestion(Question):
         """
         self.grouped = groups
 
+    def to_dict(self) -> dict:
+        """
+        Convert class instance to a dictionary
+        :return: returns dict of values of the question.
+        """
+        return {
+            "question_text": self.question_text,
+            "type": self.question_type,
+            "answers": self.get_answers(),
+            "grouped": self.grouped,
+            "id": self.question_id,
+        }
+
     @classmethod
     def from_dict(cls, data):
         # Convert a dictionary back to the class instance
         return cls(
             data["question_text"],
-            data["question_id"],
             [Answer(answer) for answer in data["answers"]],
+            data["grouped"],
+            data["id"],
         )
 
 
@@ -251,21 +295,19 @@ class Questions:
 
     Attributes:
         questions (list): A list to store all questions.
-        counter (int): A counter to keep track of the unique question IDs.
 
     Methods:
         add_question(question: str, type: [str]): Add a question to the collection.
         randomise() -> list: Return a shuffled list of the questions.
     """
 
-    def __init__(self, questions_list: list):
+    def __init__(self, questions_list: map = None):
         """
         Initialize the Questions collection with an empty list and a counter set to 0.
         """
-        self.questions = questions_list
-        self.counter = 0
+        self.questions = questions_list if questions_list else {}
 
-    def add_question(self, question: str, type_: [str]):
+    def add_question(self, question: str, type_: [str], question_id: int = None):
         """
         Add a question to the collection based on its type.
 
@@ -276,13 +318,33 @@ class Questions:
             Exception: If the question type is unknown.
         """
         if type_ == "text":
-            self.questions.append(StringQuestion(question, self.counter, []))
+            self.questions[question_id] = (StringQuestion(question, [], question_id=question_id))
         elif type_ == "multi":
-            self.questions.append(MultiChoiceQuestion(question, self.counter, []))
+            self.questions[question_id] = (MultiChoiceQuestion(question, [], question_id=question_id))
         else:
             raise Exception(f"Unknown question type: {type_}")
 
-        self.counter += 1
+    def remove_question_by_text(self, question_text: str):
+        self.questions.pop(self.get_index_by_text(question_text))
+
+    def remove_question(self, question_id: int):
+        del self.questions[question_id]
+
+    def get_questions_text(self) -> list[str]:
+        return [question.question_text for question in self.questions]
+
+    def group_all_questions(self):
+        for question in self.questions:
+            question.group()
+
+    def group_and_sort_all_questions(self):
+        for question in self.questions:
+            question.group()
+            question.sort_grouped_answers()
+
+    def sort_all_questions(self):
+        for question in self.questions:
+            question.sort_grouped_answers()
 
     def randomise(self) -> list:
         """
@@ -295,32 +357,29 @@ class Questions:
         shuffle(copied_list)
         return copied_list
 
-    def get_by_id(self, id_: int) -> Question:
+    def get_by_text(self, question_text: str) -> Question:
         for question in self.questions:
-            if question.question_id == id_:
+            if question.question_text == question_text:
                 return question
 
-    def get_by_text(self, text: str) -> Question:
-        for question in self.questions:
-            if question.question_text == text:
-                return question
+    def get_id_by_text(self, question_text: str) -> int:
+        return next((k for k, v in self.questions.items() if v.question_text == question_text), None)
 
     def to_dict(self):
         # Convert class instance to a dictionary
         return {
-            "questions": [question.to_dict() for question in self.questions],
+            "questions": self.questions,
         }
 
     @classmethod
     def from_dict(cls, data):
         # Convert a dictionary back to the class instance
-        questions_list = []
-
+        questions_list = {}
         for q_data in data["questions"]:
             if q_data["type"] == "multi":
-                questions_list.append(MultiChoiceQuestion.from_dict(q_data))
+                questions_list[x.question_id] = (x:=MultiChoiceQuestion.from_dict(q_data))
             elif q_data["type"] == "string":
-                questions_list.append(StringQuestion.from_dict(q_data))
+                questions_list[x.question_id] = (x:=StringQuestion.from_dict(q_data))
             else:
                 raise ValueError(f"Unknown question type: {q_data['type']}")
 
