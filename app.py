@@ -28,11 +28,7 @@ def delete_question(question_id):
 @app.route('/admin/questions/edit/<int:question_id>', methods=['GET'])
 def edit_question(question_id):
     question = storage.get_question(question_id)
-    print(question.possible_answers)
-    pos_ans = []
-    if question.question_type == "multi":
-        pos_ans = [[i, str(i.values())] for i in question.possible_answers]
-    return render_template('editQuestions.html', question=question, pos_ans=pos_ans)
+    return render_template('editQuestions.html', question=question)
 
 @app.route('/admin/questions', methods=['GET'])
 def add_question():

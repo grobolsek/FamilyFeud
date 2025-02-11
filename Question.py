@@ -123,7 +123,7 @@ class MultiChoiceQuestion(Question):
         group() -> dict: Group answers based on their frequency and return the result.
     """
 
-    def __init__(self, question_text: str, answers: list, grouped = None, possible_answers: list = None, question_id: int = None):
+    def __init__(self, question_text: str, answers: list, grouped = None, possible_answers: {} = None, question_id: int = None):
         """
         Initialize the Multiple Choice Question with the provided question text and ID.
 
@@ -131,7 +131,7 @@ class MultiChoiceQuestion(Question):
             question_text (str): The text of the question.
         """
         super().__init__(question_text,"multi", answers, grouped, question_id)
-        self.possible_answers = possible_answers if possible_answers else []
+        self.possible_answers = possible_answers if possible_answers else {}
         self.counter = 0
 
     def group(self):
@@ -145,7 +145,7 @@ class MultiChoiceQuestion(Question):
             self.grouped[str(answer)] += 1
 
     def add_possible_answer(self, answer: str):
-        self.possible_answers.append(Answer(answer, self.counter))
+        self.possible_answers[self.counter] = Answer(answer=answer, answer_id=self.counter)
         self.counter += 1
 
     def edit_possible_answer(self, old_answer:str, new_answer: str):
@@ -167,8 +167,8 @@ class MultiChoiceQuestion(Question):
             "question_text": self.question_text,
             "type": self.question_type,
             "answers": self.get_answers(),
-            "grouped": self.grouped,
-            "possible_answers": [{a.answer_id: a.answer} for a in self.possible_answers],
+            "grouped": dict(self.grouped),
+            "possible_answers": {key: str(value) for key, value in self.possible_answers.items()},
             "id": self.question_id,
         }
 
@@ -179,7 +179,7 @@ class MultiChoiceQuestion(Question):
             data["question_text"],
             [Answer(answer) for answer in data["answers"]],
             data["grouped"],
-            data["possible_answers"],
+            {key: Answer(value, key) for key, value in data["possible_answers"].items()},
             data["id"],
         )
 
@@ -282,7 +282,7 @@ class StringQuestion(Question):
             "question_text": self.question_text,
             "type": self.question_type,
             "answers": self.get_answers(),
-            "grouped": self.grouped,
+            "grouped": dict(self.grouped),
             "id": self.question_id,
         }
 
