@@ -147,7 +147,7 @@ class MultiChoiceQuestion(Question):
         self.possible_answers = {}
 
     def get_highest_id(self) -> int:
-        return max(self.possible_answers.keys())
+        return max(self.possible_answers.keys()) if len(self.possible_answers.keys()) > 0 else 0
 
     def to_dict(self) -> dict:
         """
@@ -306,7 +306,7 @@ class Questions:
         """
         self.questions = questions_list if questions_list else {}
 
-    def add_question(self, question: str, type_: [str], question_id: int = None):
+    def add_question(self, question: str, type_: [str], question_id: int = None, possible_answers: dict = None):
         """
         Add a question to the collection based on its type.
 
@@ -317,10 +317,10 @@ class Questions:
         Raises:
             Exception: If the question type is unknown.
         """
-        if type_ == "text":
+        if type_ == "string":
             self.questions[question_id] = (StringQuestion(question, [], question_id=question_id))
         elif type_ == "multi":
-            self.questions[question_id] = (MultiChoiceQuestion(question, [], question_id=question_id))
+            self.questions[question_id] = (MultiChoiceQuestion(question, [], question_id=question_id, possible_answers=possible_answers))
         else:
             raise Exception(f"Unknown question type: {type_}")
 

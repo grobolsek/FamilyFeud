@@ -20,7 +20,7 @@
                   answers
                 </button>
                 <ul class="dropdown-menu">
-                  {% for pa in question.possible_answers %}
+                  {% for pa in question.possible_answers.values() %}
                     <li><a class="dropdown-item" href="#">{{ pa }}</a></li>
                   {% endfor %}
                 </ul>
@@ -34,6 +34,7 @@
         </div>
       </div>
     {% endfor %}
+    <a href="/admin/questions/add/" class="btn btn-success me-2">Add Question</a>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>

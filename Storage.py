@@ -12,22 +12,22 @@ class Storage:
     def create(self, data):
         self.db.insert(data)
 
-    def add_question(self, question_text, question_type):
-        # Create a new question dictionary
-        new_question = {
-            "question_text": question_text,
-            "type": question_type,
-            "answers": [],
-            "grouped": {},
-            "id": self.counter,
-        }
+    def add_question(self, question_text, question_type, possible_answers: dict = None):
+        if question_type == "string":
+            # Add the new question to the questions list
+            self.questions.add_question(question_text, question_type, question_id=self.counter)
 
-        # Add the new question to the database
-        self.db.insert(new_question)
+        else:
+            # Add the new question to the questions list
+            self.questions.add_question(question_text, question_type, question_id=self.counter, possible_answers=possible_answers)
 
-        # Add the new question to the questions list
-        self.questions.add_question(question_text, question_type, question_id=self.counter)
+        if len(self.db) > 0:
+            self.db.update(self.questions.to_dict(), doc_ids=[1])
+        else:
+            self.db.insert(self.questions.to_dict())
         self.counter += 1
+
+
 
     def delete_question(self, question_id: int):
         question_id = int(question_id)
@@ -37,7 +37,7 @@ class Storage:
 
         if entry and "questions" in entry:
             # Filter out the question with the given ID
-            updated_questions = [{int(k): v} for k, v in entry["questions"].items() if int(k) != question_id]
+            updated_questions = {int(k): v for k, v in entry["questions"].items() if int(k) != question_id}
             # Update the database with the modified questions list
             self.db.update({"questions": updated_questions}, doc_ids=[1])
 
@@ -73,6 +73,6 @@ class Storage:
 
     def get_questions_dict(self):
         if len(self.db) > 0:
-            return self.db.all()[0]["questions"][0]
+            return self.db.all()[0]["questions"]
         else:
             return {}
