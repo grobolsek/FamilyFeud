@@ -7,7 +7,7 @@ class Storage:
         self.db = tinydb.TinyDB(file)
         self.questions_dict = self.get_questions_dict()
         self.questions = Questions.from_dict({"questions": self.questions_dict})
-        self.counter = 0
+        self.counter = self.questions.get_highest_id() + 1
 
     def create(self, data):
         self.db.insert(data)
@@ -18,7 +18,7 @@ class Storage:
             "question_text": question_text,
             "type": question_type,
             "answers": [],
-            "grouped": [],
+            "grouped": {},
             "id": self.counter,
         }
 
@@ -37,8 +37,7 @@ class Storage:
 
         if entry and "questions" in entry:
             # Filter out the question with the given ID
-            updated_questions = [q for q in entry["questions"] if q["id"] != question_id]
-
+            updated_questions = [{int(k): v} for k, v in entry["questions"].items() if int(k) != question_id]
             # Update the database with the modified questions list
             self.db.update({"questions": updated_questions}, doc_ids=[1])
 
@@ -51,8 +50,29 @@ class Storage:
     def get_questions(self):
         return self.questions.questions
 
+    def add_possible_answer(self, question_id, answer):
+        pos = self.questions.get_question_by_id(question_id)
+        pos.add_possible_answer(answer, pos.get_highest_id() + 1)
+        # todo: insert into db new pos answer
+
+    def edit_question(self, question_id: int, question_text: str, question_type: str, possible_answers: list = None):
+        question = self.questions.get_question_by_id(question_id)
+        question.question_text = question_text
+        question.type = question_type
+
+        Question_query = Query()
+        if question_type == "multi":
+            pos_ans = {}
+            question: MultiChoiceQuestion = question
+            question.remove_possible_answers()
+            for i, possible_answer in enumerate(possible_answers):
+                question.add_possible_answer(possible_answer, i)
+                pos_ans[i] = possible_answer
+
+        self.db.update(self.questions.to_dict(), doc_ids=[1])
+
     def get_questions_dict(self):
         if len(self.db) > 0:
-            return self.db.all()[0]["questions"]
+            return self.db.all()[0]["questions"][0]
         else:
-            return []
+            return {}

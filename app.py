@@ -28,16 +28,20 @@ def delete_question(question_id):
 @app.route('/admin/questions/edit/<int:question_id>', methods=['GET'])
 def edit_question(question_id):
     question = storage.get_question(question_id)
-    return render_template('editQuestions.html', question=question)
+    pos_ans = question.possible_answers.items() if question.question_type == "multi" else {}
+    hi_id = int(question.get_highest_id()) + 1 if question.question_type == "multi" else 0
+    return render_template('editQuestions.html', question=question, pos_ans = pos_ans, hi_id=hi_id)
 
-@app.route('/admin/questions', methods=['GET'])
-def add_question():
-    data = request.get_json()
-    if 'text' in data:
-        storage.add_question(data['text'], data['type'])
-        return jsonify({"success": True}), 201
-    return jsonify({"error": "Missing text"}), 400
-
+@app.route('/admin/questions/add/<int:question_id>/')
+def add_question(question_id):
+    question = request.args.get('question')
+    type_ = request.args.get('type')
+    if type_ == "none": # string
+        storage.edit_question(question_id, question, "string")
+    else: # multi
+        pos_answers = [value for key, value in request.args.items() if key.startswith('pos_ans')]
+        storage.edit_question(question_id, question, "multi", pos_answers)
+    return redirect(url_for('manage_questions'))
 
 if __name__ == '__main__':
     app.run()

@@ -83,9 +83,6 @@ class Question(ABC):
         """
         pass
 
-    def edit_question(self, new_question: str):
-        self.question_text = new_question
-
     def add_answer(self, answer: str):
         """
         Add an answer to the question.
@@ -132,7 +129,6 @@ class MultiChoiceQuestion(Question):
         """
         super().__init__(question_text,"multi", answers, grouped, question_id)
         self.possible_answers = possible_answers if possible_answers else {}
-        self.counter = 0
 
     def group(self):
         """
@@ -144,19 +140,14 @@ class MultiChoiceQuestion(Question):
         for answer in self.answers:
             self.grouped[str(answer)] += 1
 
-    def add_possible_answer(self, answer: str):
-        self.possible_answers[self.counter] = Answer(answer=answer, answer_id=self.counter)
-        self.counter += 1
+    def add_possible_answer(self, answer: str, counter: int):
+        self.possible_answers[counter] = Answer(answer=answer, answer_id=counter)
 
-    def edit_possible_answer(self, old_answer:str, new_answer: str):
-        for answer in self.possible_answers:
-            if str(answer) == old_answer:
-                answer.answer = new_answer
-                return
+    def remove_possible_answers(self):
+        self.possible_answers = {}
 
-    def remove_possible_answer(self, answer: str):
-        self.possible_answers.remove(answer)
-
+    def get_highest_id(self) -> int:
+        return max(self.possible_answers.keys())
 
     def to_dict(self) -> dict:
         """
@@ -333,9 +324,6 @@ class Questions:
         else:
             raise Exception(f"Unknown question type: {type_}")
 
-    def remove_question_by_text(self, question_text: str):
-        self.questions.pop(self.get_index_by_text(question_text))
-
     def remove_question(self, question_id: int):
         del self.questions[question_id]
 
@@ -377,17 +365,20 @@ class Questions:
     def get_id_by_text(self, question_text: str) -> int:
         return next((k for k, v in self.questions.items() if v.question_text == question_text), None)
 
+    def get_highest_id(self) -> int:
+        return max(self.questions.keys()) if len(self.questions.keys()) > 0 else 0
+
     def to_dict(self):
         # Convert class instance to a dictionary
         return {
-            "questions": [question.to_dict() for question in self.questions.values()],
+            "questions": {key: value.to_dict() for key, value in self.questions.items()},
         }
 
     @classmethod
     def from_dict(cls, data):
         # Convert a dictionary back to the class instance
         questions_list = {}
-        for q_data in data["questions"]:
+        for q_data in data["questions"].values():
             if q_data["type"] == "multi":
                 questions_list[x.question_id] = (x:=MultiChoiceQuestion.from_dict(q_data))
             elif q_data["type"] == "string":

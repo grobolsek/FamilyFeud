@@ -8,10 +8,10 @@ questions.add_question("What is your favorite sport?", "text", 1)
 
 q1: MultiChoiceQuestion = questions.get_question_by_id(0)
 
-q1.add_possible_answer("Red")
-q1.add_possible_answer("Blue")
-q1.add_possible_answer("Yellow")
-q1.add_possible_answer("White")
+q1.add_possible_answer("Red", 0)
+q1.add_possible_answer("Blue", 1)
+q1.add_possible_answer("Yellow", 2)
+q1.add_possible_answer("White", 3)
 
 q1.add_answer("Blue")
 q1.add_answer("Red")
@@ -29,7 +29,7 @@ q2.add_answer("football")
 q2.add_answer("tennis")
 
 questions.group_and_sort_all_questions()
-
 db = Storage("questions.json")
 print(questions.to_dict())
 db.create(questions.to_dict())
+
