@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, request, redirect, url_for
+from flask import Flask, jsonify, render_template, request, redirect, url_for, make_response
 from Question import *
 from Storage import Storage
 
@@ -43,7 +43,10 @@ def edit_question_redirect(question_id):
 
 @app.route('/admin/questions/add/', methods=['GET'])
 def add_question():
-    return render_template('addQuestion.html')
+    users = ["Matic", "Tilen", "Nik", "Timotej", "Aljaž", "Julija", "Tinkara M", "Miha", "Pia", "Agata", "Urška",
+             "Anuša", "Tinkara R", "Nina", "Žiga", "Doroteja", "Gabrijel"]
+
+    return render_template('addQuestion.html', users=users)
 
 @app.route('/admin/questions/add/redirect/', methods=['GET'])
 def add_question_redirect():
@@ -59,11 +62,20 @@ def add_question_redirect():
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('answers.html', questions=list(storage.get_questions().values()))
+    cookie_value = True if request.cookies.get('answered') == 'true' else False
+    if not cookie_value:
+        return render_template('answers.html', questions=list(storage.get_questions().values()))
+    else:
+        return "odgovoru si"
 
 @app.route('/answer/', methods=['GET'])
 def answer():
-    pass
+    for key, item in request.args.items():
+        storage.add_answer(int(key[6:]), item)
+    response = make_response("Cookie Set")
+    response.set_cookie('answered', "true", max_age=30)  # Expires in 1 day
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="192.168.3.27", port=5000)
+

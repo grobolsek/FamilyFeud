@@ -32,7 +32,8 @@
         <div class="card-body">
           <div class="row row-cols-1 row-cols-sm-2 g-3 mb-3 answers-container" id="answers-container">
           </div>
-          <button class="btn btn-outline-success" type="button" id="add-answer">Add answer</button>
+          <button class="btn btn-outline-success me-2" type="button" id="add-answer">Add answer</button>
+          <button class="btn btn-outline-success" type="button" id="add-users">Users</button>
         </div>
       </div>
     </form>
@@ -67,8 +68,7 @@
 
     let counter = 0
 
-    document.getElementById("add-answer").addEventListener("click", () => {
-      console.log("test")
+    function addAnswer(value = ""){
       let c = counter.toString();
       let container = document.getElementById("answers-container");
 
@@ -89,6 +89,7 @@
       inputElement.setAttribute("aria-label", "remove");
       inputElement.setAttribute("aria-describedby", "remove");
       inputElement.name = `pos_ans${c}`;
+      inputElement.value = value
 
       // Create the button element
       let buttonElement = document.createElement("button");
@@ -109,7 +110,17 @@
 
 
       counter++
+    }
+
+    document.getElementById("add-answer").addEventListener("click", () => {
+      addAnswer()
     });
+
+    document.getElementById("add-users").addEventListener("click", ()=> {
+      {% for user in users %}
+        addAnswer("{{ user }}")
+      {% endfor %}
+    })
 
   </script>
 </body>

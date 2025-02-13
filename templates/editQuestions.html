@@ -78,8 +78,7 @@
       button.parentElement.parentElement.remove();
     }
 
-    document.getElementById("add-answer").addEventListener("click", () => {
-      console.log("test")
+    function addAnswer(value = ""){
       let c = counter.toString();
       let container = document.getElementById("answers-container");
 
@@ -100,6 +99,7 @@
       inputElement.setAttribute("aria-label", "remove");
       inputElement.setAttribute("aria-describedby", "remove");
       inputElement.name = `pos_ans${c}`;
+      inputElement.value = value
 
       // Create the button element
       let buttonElement = document.createElement("button");
@@ -120,7 +120,12 @@
 
 
       counter++
+    }
+
+    document.getElementById("add-answer").addEventListener("click", () => {
+      addAnswer()
     });
+
 
   </script>
 </body>

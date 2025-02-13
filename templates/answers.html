@@ -15,10 +15,10 @@
             <h5 class="card-title mb-3 mb-sm-0">{{ question.question_text }}</h5>
             <div class="d-flex align-items-center">
               {% if question.question_type == "multi" %}
-                <select class="form-select" aria-label="Default select example" required>
+                <select name="answer{{ question.question_id }}" class="form-select" aria-label="Default select example" required>
                   <option selected disabled value="">Answers:</option>
                   {% for key, value in question.possible_answers.items() %}
-                    <option value="{{ key }}">{{ value }}</option>
+                    <option value="{{ value }}">{{ value }}</option>
                   {% endfor %}
                 </select>
                 <div class="invalid-feedback">

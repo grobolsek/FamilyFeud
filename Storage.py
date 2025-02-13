@@ -6,6 +6,7 @@ class Storage:
     def __init__(self, file):
         self.db = tinydb.TinyDB(file)
         self.questions_dict = self.get_questions_dict()
+
         self.questions = Questions.from_dict({"questions": self.questions_dict})
         self.counter = self.questions.get_highest_id() + 1
 
@@ -26,8 +27,6 @@ class Storage:
         else:
             self.db.insert(self.questions.to_dict())
         self.counter += 1
-
-
 
     def delete_question(self, question_id: int):
         question_id = int(question_id)
@@ -76,3 +75,13 @@ class Storage:
             return self.db.all()[0]["questions"]
         else:
             return {}
+
+    def add_answer(self, question_id, answer):
+        self.questions.get_question_by_id(question_id).add_answer(answer)
+        self.db.update(self.questions.to_dict(), doc_ids=[1])
+
+
+class Users:
+    def __init__(self, file):
+        self.db = tinydb.TinyDB(file)
+
