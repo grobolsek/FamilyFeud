@@ -4,13 +4,10 @@ from Storage import Storage
 
 app = Flask(__name__)
 
-file_location = "questions.json"
+file_location = "questions2.json"
 
 storage = Storage(file_location)
 
-@app.route('/admin/')
-def admin():
-    pass
 
 @app.route('/admin/questions')
 def manage_questions():
@@ -44,7 +41,7 @@ def edit_question_redirect(question_id):
 @app.route('/admin/questions/add/', methods=['GET'])
 def add_question():
     users = ["Matic", "Tilen", "Nik", "Timotej", "Aljaž", "Julija", "Tinkara M", "Miha", "Pia", "Agata", "Urška",
-             "Anuša", "Tinkara R", "Nina", "Žiga", "Doroteja", "Gabrijel"]
+             "Anuša", "Tinkara R", "Žiga", "Doroteja", "Gabrijel"]
 
     return render_template('addQuestion.html', users=users)
 
@@ -62,6 +59,7 @@ def add_question_redirect():
 
 @app.route('/', methods=['GET'])
 def index():
+    print(request.cookies)
     cookie_value = True if request.cookies.get('answered') == 'true' else False
     if not cookie_value:
         return render_template('answers.html', questions=list(storage.get_questions().values()))
@@ -72,9 +70,35 @@ def index():
 def answer():
     for key, item in request.args.items():
         storage.add_answer(int(key[6:]), item)
-    response = make_response("Cookie Set")
-    response.set_cookie('answered', "true", max_age=30)  # Expires in 1 day
+    resp = make_response("Cookie has been set!")
+    resp.set_cookie('username', 'true')
     return redirect(url_for('index'))
+
+
+@app.route('/game/<int:question_num>')
+def game(question_num):
+    question = list(storage.get_questions().values())[question_num]
+    return render_template("game.html", question=question, admin=False)
+
+
+@app.route('/admin/game/<int:question_num>')
+def game_admin(question_num):
+    print(storage.get_questions().values())
+    question = list(storage.get_questions().values())[question_num]
+    return render_template("game.html", question=question, admin=True)
+
+@app.route('/game/button/', methods=['GET'])
+def game_button():
+    pass
+
+@app.route('/admin/')
+def admin():
+    return render_template('admin.html', questions=storage.get_questions())
+
+@app.route("/admin/group-and-sort")
+def group_all():
+    storage.questions.group_and_sort_all_questions()
+    return redirect(url_for("admin"))
 
 if __name__ == '__main__':
     app.run(host="192.168.3.27", port=5000)

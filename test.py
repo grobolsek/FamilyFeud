@@ -29,7 +29,7 @@ q2.add_answer("football")
 q2.add_answer("tennis")
 
 questions.group_and_sort_all_questions()
-db = Storage("questions.json")
+db = Storage("test.json")
 print(questions.to_dict())
 db.create(questions.to_dict())
 

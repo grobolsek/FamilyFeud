@@ -59,7 +59,7 @@ class Question(ABC):
         answers() -> list: Return a list of answers for the question.
     """
 
-    def __init__(self, question_text: str, question_type: str, answers: list, grouped = None, question_id: int = None):
+    def __init__(self, question_text: str, question_type: str, answers: list, grouped: defaultdict = None, question_id: int = None):
         """
         Initialize the Question with the provided question text and ID.
 
@@ -69,7 +69,7 @@ class Question(ABC):
         self.question_text = question_text
         self.question_type = question_type
         self.answers = answers
-        self.grouped = grouped if grouped else defaultdict(int)
+        self.grouped = defaultdict(int, grouped) if grouped else defaultdict(int)
         self.question_id = question_id
         self.counter = 0
 
@@ -106,7 +106,7 @@ class Question(ABC):
         """
         Sort the grouped answers
         """
-        self.grouped = sorted(self.grouped.items(), key=lambda x: x[1], reverse=True)
+        self.grouped = defaultdict(int, sorted(self.grouped.items(), key=lambda item: item[1], reverse=True))
 
 
 class MultiChoiceQuestion(Question):
@@ -119,6 +119,8 @@ class MultiChoiceQuestion(Question):
     Methods:
         group() -> dict: Group answers based on their frequency and return the result.
     """
+
+    grouped: defaultdict
 
     def __init__(self, question_text: str, answers: list, grouped = None, possible_answers: {} = None, question_id: int = None):
         """
@@ -137,6 +139,7 @@ class MultiChoiceQuestion(Question):
         Returns:
             dict: A dictionary with answers as keys and their counts as values.
         """
+        self.grouped = defaultdict(int)
         for answer in self.answers:
             self.grouped[str(answer)] += 1
 
@@ -169,7 +172,7 @@ class MultiChoiceQuestion(Question):
         return cls(
             data["question_text"],
             [Answer(answer) for answer in data["answers"]],
-            data["grouped"],
+            defaultdict(int, data["grouped"]),
             {key: Answer(value, key) for key, value in data["possible_answers"].items()},
             data["id"],
         )
@@ -200,6 +203,8 @@ class StringQuestion(Question):
         processed_keys = {}  # Maps original keys to their processed versions (e.g., lowercase)
 
         data = self.get_answers()
+
+        self.grouped = defaultdict(int)
 
         for s in data:
             processed_s = s if case_sensitive else s.lower()
@@ -273,7 +278,7 @@ class StringQuestion(Question):
             "question_text": self.question_text,
             "type": self.question_type,
             "answers": self.get_answers(),
-            "grouped": dict(self.grouped),
+            "grouped": defaultdict(int, self.grouped),
             "id": self.question_id,
         }
 
@@ -283,7 +288,7 @@ class StringQuestion(Question):
         return cls(
             data["question_text"],
             [Answer(answer) for answer in data["answers"]],
-            data["grouped"],
+            defaultdict(int, data["grouped"]),
             data["id"],
         )
 
