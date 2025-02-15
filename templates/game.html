@@ -12,10 +12,10 @@
     <div class="card" id="questions-list">
       <div class="card-body">
         <div class="row row-cols-1 row-cols-sm-2 g-3 mb-3 answers-container" id="answers-container">
-          {% for key, answer in question.grouped %}
+          {% for key, answer in question.grouped.items() %}
             <div class="col">
-              <div class="alert alert-secondary {% if admin %}visually-hidden{% endif %}" onclick="reveal(this)">
-                {{ key+'. ' }}{{ answer }}
+              <div class="alert alert-secondary" {% if not admin %} style="color: transparent" {% endif %} onclick="reveal(this)">
+                {{ key }}. {{ answer }}
               </div>
             </div>
           {% endfor %}
@@ -27,7 +27,7 @@
   <script>
 
     function reveal(element){
-      element.classList.remove("visually-hidden");
+      element.style.color = "white"
     }
 
   </script>

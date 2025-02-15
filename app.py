@@ -4,7 +4,7 @@ from Storage import Storage
 
 app = Flask(__name__)
 
-file_location = "questions2.json"
+file_location = "questions_taa.json"
 
 storage = Storage(file_location)
 
@@ -60,7 +60,7 @@ def add_question_redirect():
 @app.route('/', methods=['GET'])
 def index():
     print(request.cookies)
-    cookie_value = True if request.cookies.get('answered') == 'true' else False
+    cookie_value = True if request.cookies.get('username') == 'true' else False
     if not cookie_value:
         return render_template('answers.html', questions=list(storage.get_questions().values()))
     else:
@@ -83,7 +83,6 @@ def game(question_num):
 
 @app.route('/admin/game/<int:question_num>')
 def game_admin(question_num):
-    print(storage.get_questions().values())
     question = list(storage.get_questions().values())[question_num]
     return render_template("game.html", question=question, admin=True)
 
@@ -99,6 +98,12 @@ def admin():
 def group_all():
     storage.questions.group_and_sort_all_questions()
     return redirect(url_for("admin"))
+
+@app.route("/admin/questions/delans/<int:question_id>")
+def delans(question_id):
+    storage.delete_answers(question_id)
+    return redirect(url_for("admin"))
+
 
 if __name__ == '__main__':
     app.run(host="192.168.3.27", port=5000)

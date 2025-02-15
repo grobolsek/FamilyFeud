@@ -80,6 +80,12 @@ class Storage:
         self.questions.get_question_by_id(question_id).add_answer(answer)
         self.db.update(self.questions.to_dict(), doc_ids=[1])
 
+    def delete_answers(self, question_id: int):
+        self.questions.get_question_by_id(question_id).answers = []
+        self.questions.get_question_by_id(question_id).grouped = defaultdict(int)
+        self.db.update(self.questions.to_dict(), doc_ids=[1])
+
+
 
 class Users:
     def __init__(self, file):
